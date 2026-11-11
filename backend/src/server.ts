@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./db/connection";
+import { initDb } from "./db/initDb";
 import authRoutes from "./routes/authRoutes";
 import customerRoutes from "./routes/customerRoutes";
 import productRoutes from "./routes/productRoutes";
@@ -49,6 +50,25 @@ app.get("/db-test", async (_req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`fourClover Server running on port ${PORT}`);
-});
+const startServer = async () => {
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await initDb(false);
+            break;
+        } catch (error) {
+            if (attempt === maxAttempts) {
+                console.error("Failed to initialize database after retries; starting server anyway.", error);
+            } else {
+                console.warn(`Database init attempt ${attempt}/${maxAttempts} failed, retrying in 2s...`);
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+            }
+        }
+    }
+
+    app.listen(PORT, () => {
+        console.log(`fourClover Server running on port ${PORT}`);
+    });
+};
+
+startServer();

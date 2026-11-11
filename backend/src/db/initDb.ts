@@ -2,8 +2,9 @@ import fs from "fs";
 import path from "path";
 import bcrypt from "bcryptjs";
 import pool from "./connection";
+import { seedDemoData } from "./seedDemoData";
 
-export const initDb = async () => {
+export const initDb = async (closePool = true) => {
     try {
         console.log("🚀 Initializing fourClover PostgreSQL Database...");
 
@@ -35,15 +36,22 @@ export const initDb = async () => {
         }
         console.log("✅ Default fourClover users verified/seeded");
 
+        // 3. Seed realistic Indian customers, electronics products, and sample challans when tables are empty
+        await seedDemoData();
+
         console.log("🎉 Database initialization completed successfully!");
     } catch (error) {
         console.error("❌ Error initializing database:", error);
         throw error;
     } finally {
-        await pool.end();
+        if (closePool) {
+            await pool.end();
+        }
     }
 };
 
 if (require.main === module) {
-    initDb();
+    initDb(true).catch(() => {
+        process.exit(1);
+    });
 }
