@@ -306,8 +306,11 @@ export const seedDemoData = async () => {
             return;
         }
 
-        const customerCount = (await client.query("SELECT COUNT(*)::int AS count FROM customers")).rows[0].count;
-        if (customerCount === 0) {
+        const demoCustomerEmails = SAMPLE_CUSTOMERS.map((c) => c.email);
+        const existingDemoCustomers = (
+            await client.query("SELECT COUNT(*)::int AS count FROM customers WHERE email = ANY($1)", [demoCustomerEmails])
+        ).rows[0].count;
+        if (existingDemoCustomers === 0) {
             for (const c of SAMPLE_CUSTOMERS) {
                 await client.query(
                     `INSERT INTO customers
@@ -319,22 +322,28 @@ export const seedDemoData = async () => {
             console.log(`✅ Seeded ${SAMPLE_CUSTOMERS.length} Indian customers`);
         }
 
-        const productCount = (await client.query("SELECT COUNT(*)::int AS count FROM products")).rows[0].count;
-        if (productCount === 0) {
+        const demoProductSkus = SAMPLE_PRODUCTS.map((p) => p.sku);
+        const existingDemoProducts = (
+            await client.query("SELECT COUNT(*)::int AS count FROM products WHERE sku = ANY($1)", [demoProductSkus])
+        ).rows[0].count;
+        if (existingDemoProducts === 0) {
             for (const p of SAMPLE_PRODUCTS) {
                 const inserted = await client.query(
                     `INSERT INTO products
                     (name, sku, category, unit_price, current_stock, minimum_stock, warehouse_location)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (sku) DO NOTHING
                     RETURNING id`,
                     [p.name, p.sku, p.category, p.unit_price, p.current_stock, p.minimum_stock, p.warehouse_location]
                 );
 
-                await client.query(
-                    `INSERT INTO stock_movements (product_id, quantity_changed, movement_type, reason, created_by)
-                     VALUES ($1, $2, 'IN', 'Initial Demo Stock Import', $3)`,
-                    [inserted.rows[0].id, p.current_stock, adminId]
-                );
+                if (inserted.rows.length > 0) {
+                    await client.query(
+                        `INSERT INTO stock_movements (product_id, quantity_changed, movement_type, reason, created_by)
+                         VALUES ($1, $2, 'IN', 'Initial Demo Stock Import', $3)`,
+                        [inserted.rows[0].id, p.current_stock, adminId]
+                    );
+                }
             }
             console.log(`✅ Seeded ${SAMPLE_PRODUCTS.length} electronics products`);
         }
