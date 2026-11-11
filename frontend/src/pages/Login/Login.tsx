@@ -5,6 +5,13 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import styles from './Login.module.css';
 
+const DEMO_ACCOUNTS = [
+  { role: 'Admin', email: 'admin@fourclover.com', password: 'Password123', access: 'Full access' },
+  { role: 'Sales', email: 'sales@fourclover.com', password: 'Password123', access: 'Customers & Challans' },
+  { role: 'Warehouse', email: 'warehouse@fourclover.com', password: 'Password123', access: 'Products & Stock' },
+  { role: 'Accounts', email: 'accounts@fourclover.com', password: 'Password123', access: 'Products & Invoices' },
+] as const;
+
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +22,12 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
+
+  const handleFillDemoAccount = (demoEmail: string, demoPassword: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +70,7 @@ export const Login: React.FC = () => {
           </p>
         </div>
 
-        <span className={styles.brandFooter}>fourClover ERP/CRM · Internal Use Only</span>
+        <span className={styles.brandFooter}>fourClover ERP/CRM</span>
       </div>
 
       {/* ── Right form panel ── */}
@@ -65,7 +78,7 @@ export const Login: React.FC = () => {
         <div className={styles.formInner}>
           <div className={styles.formHeader}>
             <h2>Sign in</h2>
-            <p>Use your organisation credentials to continue.</p>
+            <p>Use your organisation credentials or pick a demo role below.</p>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form}>
@@ -102,6 +115,30 @@ export const Login: React.FC = () => {
               Continue →
             </Button>
           </form>
+
+          <div className={styles.demoSection}>
+            <div className={styles.demoHeader}>
+              <span className={styles.demoTitle}>Demo accounts</span>
+              <span className={styles.demoHint}>Click a role to autofill</span>
+            </div>
+            <div className={styles.demoGrid}>
+              {DEMO_ACCOUNTS.map((account) => {
+                const isSelected = email.trim().toLowerCase() === account.email;
+                return (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleFillDemoAccount(account.email, account.password)}
+                    className={`${styles.demoCard} ${isSelected ? styles.demoCardActive : ''}`}
+                  >
+                    <span className={styles.demoRole}>{account.role}</span>
+                    <span className={styles.demoAccess}>{account.access}</span>
+                    <span className={styles.demoEmail}>{account.email}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
